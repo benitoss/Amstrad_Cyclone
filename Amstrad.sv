@@ -540,6 +540,7 @@ end
 ////////////////////// CDT playback ///////////////////////////////
 
 wire        tape_read;
+wire        tape_running;
 wire        tape_data_req;
 reg         tape_data_ack;
 reg         tape_reset;
@@ -578,8 +579,15 @@ reg [24:0] tape_motor_cnt;
 wire       tape_motor_led = tape_motor_cnt[24] ? tape_motor_cnt[23:16] > tape_motor_cnt[7:0] : tape_motor_cnt[23:16] <= tape_motor_cnt[7:0];
 always @(posedge clk_sys) tape_motor_cnt <= tape_motor_cnt + 1'd1;
 
-tzxplayer tzxplayer
-(
+tzxplayer #(
+	.NORMAL_PILOT_LEN(2000),
+	.NORMAL_SYNC1_LEN(855),
+	.NORMAL_SYNC2_LEN(855),
+	.NORMAL_ZERO_LEN(855),
+	.NORMAL_ONE_LEN(1710),
+	.NORMAL_PILOT_PULSES(4095)
+)
+tzxplayer (
     .clk(clk_sys),
     .ce(1),
     .restart_tape(tape_reset),
@@ -587,7 +595,27 @@ tzxplayer tzxplayer
     .tzx_req(tape_data_req),
     .tzx_ack(tape_data_ack),
     .cass_read(tape_read),
-    .cass_motor(tape_motor)
+    .cass_motor(tape_motor),
+    .cass_running(tape_running)
+);
+
+wire progress_pix;
+reg [31:0] tape_progress;
+
+always @(posedge clk_sys)
+	if (tape_last_addr != 0)
+		tape_progress <= tape_play_addr * 7'd127 / tape_last_addr;
+	else
+		tape_progress <= 0;
+
+progressbar progressbar(
+	.clk(clk_sys),
+	.ce_pix(ce_16),
+	.hblank(hbl),
+	.vblank(vbl),
+	.enable(tape_running),
+	.progress(tape_progress[6:0]),
+	.pix(progress_pix)
 );
 
 //////////////////////////////////////////////////////////////////////////
@@ -934,9 +962,9 @@ mist_video #(.SD_HCNT_WIDTH(10), .OSD_X_OFFSET(10'd18)) mist_video (
 
 	// video in
 `ifndef CYCLONE
-	.R           ( blank ? 6'd0 : R[7:2] ),
-	.G           ( blank ? 6'd0 : G[7:2] ),
-	.B           ( blank ? 6'd0 : B[7:2] ),
+	.R           ( blank ? 6'd0 : ( R[7:2] | {6{progress_pix}}) ),
+	.G           ( blank ? 6'd0 : ( G[7:2] | {6{progress_pix}}) ),
+	.B           ( blank ? 6'd0 : ( B[7:2] | {6{progress_pix}}) ),
 `else
 	.R           ( blank ? 6'd0 : R_OSD[7:2] ),
 	.G           ( blank ? 6'd0 : G_OSD[7:2] ),

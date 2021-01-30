@@ -32,7 +32,10 @@ set_multicycle_path -from {Amstrad_motherboard:motherboard|T80pa:CPU|T80:u0|*} -
 set_multicycle_path -to {u765:u765|fdc.i_rpm_time[*][*][*]} -setup 4
 set_multicycle_path -to {u765:u765|fdc.i_rpm_time[*][*][*]} -hold 3
 
+
 # False paths
+
+set_false_path -to {tape_progress[*]}
 
 # Don't bother optimizing sigma_delta_dac
 set_false_path -to {sigma_delta_dac:*}
