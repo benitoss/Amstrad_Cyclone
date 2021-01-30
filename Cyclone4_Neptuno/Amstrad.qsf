@@ -363,6 +363,7 @@ set_global_assignment -name SMART_RECOMPILE ON
 set_global_assignment -name ON_CHIP_BITSTREAM_DECOMPRESSION OFF
 set_global_assignment -name PRE_FLOW_SCRIPT_FILE "quartus_sh:../build_id_verilog.tcl"
 set_global_assignment -name OPTIMIZATION_MODE "HIGH PERFORMANCE EFFORT"
+set_global_assignment -name VERILOG_FILE ../progressbar.v
 set_global_assignment -name VHDL_FILE ../CtrlModule/CtrlModule/RTL/io_ps2_out.vhd
 set_global_assignment -name VHDL_FILE ../CtrlModule/CtrlModule/RTL/dpram.vhd
 set_global_assignment -name VHDL_FILE ../CtrlModule/CtrlModule/RTL/spi.vhd
