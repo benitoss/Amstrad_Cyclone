@@ -25,7 +25,9 @@ module image_controller
 	output reg				sd_buff_wr,
 		                        
 	output reg 	[19:0]	sram_addr_o,
-	input			[ 7:0]	sram_data_i	
+	input			[ 7:0]	sram_data_i,
+	output		[ 7:0]	sram_data_o,
+	output               sram_we_o
 
 );
 
@@ -36,12 +38,14 @@ typedef enum
 {
 		IDLE,
 		P0,
-		P1,
-		P2,
-		P3,
-		P4,
-		P5,
-		P6
+		R1,
+		R2,
+		R3,
+		R4,
+		R5,
+		W1,
+		W2,
+		W3
 } states_t;
 
 states_t state_s ;
@@ -75,57 +79,79 @@ assign	sram_addr_o = sram_addr_s;
 						 P0:
 							 begin
 
-										if ( sd_rd[0] )
-										begin
-
-											sd_ack <= 1'b1;
-											state_s <= P1;							
-											
-											sd_addr = sd_lba[16:0]; //(sd_lba[16:0] > 9'd256)? sd_lba[16:0] - 9'd256 : sd_lba[16:0]; // ATTENTION blocking assignment
-											sram_addr_s[19:9] =  sd_addr[10:0];
-											sram_addr_s[8:0] = 9'b000000000;
-						
-										end
+									if ( sd_rd[0] )
+									begin
+										sd_ack <= 1'b1;
+										state_s <= R1;																		
+										sd_addr = sd_lba[16:0]; //(sd_lba[16:0] > 9'd256)? sd_lba[16:0] - 9'd256 : sd_lba[16:0]; // ATTENTION blocking assignment
+										sram_addr_s[19:9] =  sd_addr[10:0];
+										sram_addr_s[8:0] = 9'b000000000;
+									end
+									if ( sd_wr[0] )
+									begin
+										sd_ack <= 1'b1;
+										state_s <= W1;																		
+										sd_addr = sd_lba[16:0]; //(sd_lba[16:0] > 9'd256)? sd_lba[16:0] - 9'd256 : sd_lba[16:0]; // ATTENTION blocking assignment
+										sram_addr_s[19:9] =  sd_addr[10:0];
+										sram_addr_s[8:0] = 9'b000000000;						
+									end
 							end
 						
-						P1:
+						R1:
 							begin
 									sd_buff_dout<= sram_data_i;
-									state_s <= P2;
+									state_s <= R2;
 							end	
 						
-						P2:
+						R2:
 							begin			
 									sd_buff_wr <= 1'b1;
-									state_s <= P3;
+									state_s <= R3;
 							end	
 						
-						P3:	
+						R3:	
 							begin		
 									sd_buff_wr <= 1'b0;
-									state_s <= P4;
+									state_s <= R4;
 							end	
 						
-						P4:
+						R4:
 							begin
 									sram_addr_s <= sram_addr_s + 1;
-								
-
 									if (sram_addr_s[8:0] != 9'b111111111)
-										state_s <= P1;
+										state_s <= R1;
 									else
-										state_s <= P5;
-									
+										state_s <= R5;
 							end
 								
-						P5:
+						R5:
 							begin
 									sd_ack <= 1'b0;
 									state_s <= P0;
 							end		
-						
-						P6: state_s <= P6;
-						  
+
+						W1:
+							begin
+									sram_data_o <= sd_buff_din;
+									sram_we_o   <= 1'b1;
+									state_s <= W2;
+							end	
+
+						W2:
+							begin
+									sram_addr_s <= sram_addr_s + 1;
+									sram_we_o   <= 1'b0;
+									if (sram_addr_s[8:0] != 9'b111111111)
+										state_s <= W1;
+									else
+										state_s <= W3;		
+							end
+
+						W3:
+							begin
+									sd_ack <= 1'b0;
+									state_s <= P0;
+							end		
 						
 							  
 					endcase;
