@@ -94,11 +94,11 @@ module Amstrad
 	output wire	JOY_CLK,
 	output wire	JOY_LOAD,
 	input  wire JOY_DATA,
-	output wire JOY_SELEC,
 `else
 	input	wire [5:0]joystick1,
 	input	wire [5:0]joystick2,
 `endif	
+	output wire JOY_SELECT,
 	// Audio
 	output wire	AUDIO_L,
 	output wire	AUDIO_R,
@@ -254,6 +254,7 @@ wire  [6:0] joy2;
 `else
 wire  [6:0] joy1 = ~{1'b1,joystick1};
 wire  [6:0] joy2 = ~{1'b1,joystick2};
+assign JOY_SELECT = 1'b1;
 `endif
 
 wire [31:0] status;
