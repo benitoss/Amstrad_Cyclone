@@ -13,6 +13,6 @@ set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) .
 set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) ./ZPUFlex/RTL/zpu_core_flex.vhd ]
 set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) ./ZPUFlex/RTL/zpupkg.vhd ]
 set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) ./modules/audio_i2s.vhd ]
-
+set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) ./CtrlModule/modules/ps2_mouse.v]
 
 

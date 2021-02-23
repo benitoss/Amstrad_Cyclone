@@ -380,6 +380,7 @@ set_global_assignment -name VHDL_FILE ../CtrlModule/CtrlModule/CharROM/CharROM_R
 set_global_assignment -name VHDL_FILE ../CtrlModule/ZPUFlex/RTL/zpupkg.vhd
 set_global_assignment -name VHDL_FILE ../CtrlModule/ZPUFlex/RTL/zpu_core_flex.vhd
 set_global_assignment -name VHDL_FILE ../CtrlModule/modules/audio_i2s.vhd
+set_global_assignment -name VERILOG_FILE ../CtrlModule/modules/ps2_mouse.v
 set_global_assignment -name SYSTEMVERILOG_FILE "../mist-modules/rgb2ypbpr.sv"
 set_global_assignment -name VERILOG_FILE "../mist-modules/osd.v"
 set_global_assignment -name SYSTEMVERILOG_FILE "../mist-modules/cofi.sv"

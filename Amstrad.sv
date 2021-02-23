@@ -242,9 +242,13 @@ wire  [8:0] mouse_y;
 wire  [7:0] mouse_flags;
 wire        mouse_strobe;
 
+`ifndef CYCLONE
 wire [24:0] ps2_mouse = { mouse_strobe_level, mouse_y[7:0], mouse_x[7:0], mouse_flags };
 reg         mouse_strobe_level;
 always @(posedge clk_sys) if (mouse_strobe) mouse_strobe_level <= ~mouse_strobe_level;
+`else
+wire [24:0] ps2_mouse;
+`endif
 
 wire  [1:0] buttons;
 
@@ -353,11 +357,15 @@ data_io data_io
 	
 	.ps2k_clk_in(ps2_clk),
 	.ps2k_dat_in(ps2_data),
+	.ps2m_clk_in(ps2_mouse_clk),
+	.ps2m_dat_in(ps2_mouse_data),	
 	.key_strobe(key_strobe),
 	.key_code(key_code),
 	.key_pressed(key_pressed),
 	.key_extended(key_extended),
-
+	
+	.ps2_mouse(ps2_mouse),
+	
 	.host_scandoubler_disable(host_scandoubler_disable),
 `ifndef JOYDC
 	.JOY_CLK(JOY_CLK),
