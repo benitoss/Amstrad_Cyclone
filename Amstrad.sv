@@ -131,13 +131,13 @@ assign VGA_BLANK = 1'b1;
 assign VGA_CLOCK = clk_sys;
 `endif
 
-assign LED = ~ioctl_download; //~mf2_en & ~ioctl_download & ~(tape_motor & tape_motor_led);
+assign LED = ~mf2_en & ~ioctl_download & ~(tape_running & tape_motor_led);
 
 `include "build_id.v"
 localparam CONF_STR = {
 	"AMSTRAD;;",
-	"S0,DSK,Mount Disk A:;",
-	"S1,DSK,Mount Disk B:;",
+	"S0U,DSK,Mount Disk A:;",
+	"S1U,DSK,Mount Disk B:;",
 	"F,E??,Load expansion;",
 	"F,CDT,Load;",
 	"P1,Video & Audio;",
@@ -159,6 +159,7 @@ localparam CONF_STR = {
 	"P3OGH,FDC,Original,Fast,Disabled;",
 	"P3O5,Distributor,Amstrad,Schneider;",
 	"P3O4,Model,CPC 6128,CPC 664;",
+	"P3OP,Tape progressbar,Off,On;",
 	"P3T0,Reset & apply model;",
 	"V,",`BUILD_DATE
 };
@@ -179,6 +180,7 @@ wire       st_mouse_en = status[19];
 wire       st_right_shift_mod = status[22];
 wire       st_keypad_mod = status[23];
 wire       st_playcity_ena = status[24];
+wire       st_progressbar = status[25];
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -554,6 +556,9 @@ wire        tape_data_req;
 reg         tape_data_ack;
 reg         tape_reset;
 reg         tape_rd;
+reg         tape_play;
+wire        tape_motor;
+reg         tape_end;
 reg   [7:0] tape_dout;
 reg  [22:0] tape_play_addr;
 reg  [22:0] tape_last_addr;
@@ -566,6 +571,7 @@ always @(posedge clk_sys) begin
         tape_last_addr <= 0;
         tape_rd <= 0;
         tape_reset <= 1;
+        tape_end <= 0;
     end else begin
         old_tape_ack <= tape_ack;
         tape_reset <= 0;
@@ -573,13 +579,17 @@ always @(posedge clk_sys) begin
             tape_play_addr <= 0;
             tape_last_addr <= tape_addr;
             tape_reset <= 1;
+            tape_end <= 0;
         end
         if (!ioctl_download && tape_rd && tape_ack ^ old_tape_ack) begin
             tape_data_ack <= tape_data_req;
             tape_rd <= 0;
             tape_play_addr <= tape_play_addr + 1'd1;
-        end else if (!ioctl_download && tape_play_addr <= tape_last_addr && !tape_rd && (tape_data_req ^ tape_data_ack)) begin
-            tape_rd <= 1;
+        end else if (!ioctl_download && !tape_rd && (tape_data_req ^ tape_data_ack)) begin
+            if (tape_play_addr <= tape_last_addr)
+                tape_rd <= 1;
+            else
+                tape_end <= 1;
         end
     end
 end
@@ -604,7 +614,7 @@ tzxplayer (
     .tzx_req(tape_data_req),
     .tzx_ack(tape_data_ack),
     .cass_read(tape_read),
-    .cass_motor(tape_motor),
+    .cass_motor(tape_motor & !tape_end),
     .cass_running(tape_running)
 );
 
@@ -622,7 +632,7 @@ progressbar progressbar(
 	.ce_pix(ce_16),
 	.hblank(hbl),
 	.vblank(vbl),
-	.enable(tape_running),
+	.enable(tape_running & st_progressbar),
 	.progress(tape_progress[6:0]),
 	.pix(progress_pix)
 );
@@ -1010,12 +1020,7 @@ sigma_delta_dac #(10) dac_r
 
 //////////////////////////////////////////////////////////////////////
 
-localparam ear_autostop_time = 5 * 64000000; // 5 sec
-reg        ear_input_detected;
-integer    ear_autostop_cnt = 0;
 reg        UART_RXd, UART_RXd2, tape_in;
-reg        tape_play;
-wire       tape_motor;
 assign     UART_TX = tape_motor;
 
 // detect tape input from UART, switch to external tape input for 5 secs
@@ -1025,9 +1030,7 @@ always @(posedge clk_sys) begin
 	UART_RXd2 <= UART_RXd;
 	tape_in <= UART_RXd2;
 
-	if (ear_autostop_cnt != 0) ear_autostop_cnt <= ear_autostop_cnt - 1'd1;
-	if (tape_in ^ UART_RXd2) ear_autostop_cnt <= ear_autostop_time;
-	tape_play <= (ear_autostop_cnt != 0) ? tape_in : tape_read;
+	tape_play <= tape_running ? tape_read : tape_in;
 end
 
 `ifdef CYCLONE
