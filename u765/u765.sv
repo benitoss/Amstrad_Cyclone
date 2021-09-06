@@ -62,6 +62,7 @@ module u765 #(parameter CYCLES = 20'd4000, SPECCY_SPEEDLOCK_HACK = 0)
 //localparam OVERRUN_TIMEOUT = 26'd35000000;
 localparam OVERRUN_TIMEOUT = CYCLES;
 localparam [19:0] TRACK_TIME = CYCLES*8'd200;
+localparam [19:0] ID_POS = CYCLES/512;
 
 localparam UPD765_MAIN_D0B = 0;
 localparam UPD765_MAIN_D1B = 1;
@@ -849,7 +850,7 @@ always @(posedge clk_sys) begin : fdc
 					status[1] <= 8'b101;
 					status[2] <= 0;
 					state <= COMMAND_READ_RESULTS;
-				end else if (i_rpm_timer[ds0][hds] < (i_rpm_time[ds0][hds] >> 4) && i_secinfo_valid[ds0][hds]) begin
+				end else if ((i_rpm_timer[ds0][hds] == ID_POS) && i_secinfo_valid[ds0][hds]) begin
 					// should wait for the ID field on the disc
 					i_sector_c <= sector_c[ds0][hds];
 					i_sector_h <= sector_h[ds0][hds];
@@ -948,7 +949,7 @@ always @(posedge clk_sys) begin : fdc
 				end
 
 				if ((i_current_sector_pos[ds0][hds] == i_current_track_sectors[ds0][hds] - 1) &&
-				    (i_rpm_timer[ds0][hds] == i_rpm_time[ds0][hds] >> 1) &&
+				    (i_rpm_timer[ds0][hds] == 0) &&
 					  (ds0 == i_current_drive)) begin
 					$display("passed index mark, pass: %d", i_scanning);
 					// passed index mark
